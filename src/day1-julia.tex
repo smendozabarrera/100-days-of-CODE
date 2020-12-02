@@ -1,0 +1,151 @@
+% Created 2020-12-02 Wed 07:26
+% Intended LaTeX compiler: pdflatex
+\documentclass[letterpaper]{tufte-handout}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{minted}
+\usepackage{fontspec}
+\defaultfontfeatures{Ligatures=TeX}
+\usepackage[small,sf,bf]{titlesec}
+\ifx\ifxetex\ifluatex\else % if lua- or xelatex http://tex.stackexchange.com/a/140164/1913
+\newcommand{\textls}[2][5]{%
+\begingroup\addfontfeatures{LetterSpace=#1}#2\endgroup
+}
+\renewcommand{\allcapsspacing}[1]{\textls[15]{#1}}
+\renewcommand{\smallcapsspacing}[1]{\textls[10]{#1}}
+\renewcommand{\allcaps}[1]{\textls[15]{\MakeTextUppercase{#1}}}
+\renewcommand{\smallcaps}[1]{\smallcapsspacing{\scshape\MakeTextLowercase{#1}}}
+\renewcommand{\textsc}[1]{\smallcapsspacing{\textsmallcaps{#1}}}
+\fi
+\setmainfont{Adobe Caslon Pro}
+\setmonofont{Anonymous Pro}
+\usepackage{booktabs} % book-quality tables
+\usepackage{units}    % non-stacked fractions and better unit spacing
+\usepackage{multicol} % multiple column layout facilities
+\usepackage{lipsum}   % filler text
+\usepackage{fancyvrb} % extended verbatim environments
+\fvset{fontsize=\normalsize}% default font size for fancy-verbatim environments
+\newcommand{\doccmd}[1]{\texttt{\textbackslash#1}}% command name -- adds backslash automatically
+\newcommand{\docopt}[1]{\ensuremath{\langle}\textrm{\textit{#1}}\ensuremath{\rangle}}% optional command argument
+\newcommand{\docarg}[1]{\textrm{\textit{#1}}}% (required) command argument
+\newcommand{\docenv}[1]{\textsf{#1}}% environment name
+\newcommand{\docpkg}[1]{\texttt{#1}}% package name
+\newcommand{\doccls}[1]{\texttt{#1}}% document class name
+\newcommand{\docclsopt}[1]{\texttt{#1}}% document class option name
+\newenvironment{docspec}{\begin{quote}\noindent}{\end{quote}}% command specification environment
+\usepackage{babel}
+\usepackage[fixlanguage]{babelbib}
+\selectbiblanguage{english}
+\usepackage[sort,round]{natbib}
+\usepackage[nottoc]{tocbibind}
+\usepackage{csquotes}
+\usepackage{multirow}
+\hypersetup{colorlinks}
+\definecolor{sectionColor}{rgb}{0.663,0,0.064} %% red
+\definecolor{citeColor}{rgb}{0.753,0.18,0.114} %% orange
+\subsectionfont{\color{sectionColor}}
+\sectionfont{\color{sectionColor}}
+\hypersetup{%
+pdfborder = {0 0 0},
+bookmarksdepth = section,
+citecolor = sectionColor,
+linkcolor = sectionColor,
+urlcolor = citeColor,
+}
+\newcommand{\degC}{$^\circ$C{}}
+\usepackage{fancyhdr} \pagestyle{fancyplain} \fancyhf{} \renewcommand{\headrulewidth}{0pt} \lhead{\scriptsize{SERGIO-FELICIANO MENDOZA-BARRERA}} \rhead{\scriptsize{PERSONAL RESEARCH $\cdot\ 2020\ \cdot$ GLOBAL LABS $\cdot$ MEXICO}}\fancyfoot[RO, LE]{\thepage}
+\newcommand\at[2]{\left.#1\right|_{#2}}
+\newcommand\HHI{\mathit{HHI}}
+\newcommand\CR{\mathit{CR}}
+\definecolor{bg}{rgb}{0.973, 0.973, 0.973}
+\author{Sergio-Feliciano Mendoza-Barrera}
+\date{\today}
+\title{100 days of code. Day 1 with Julia}
+\hypersetup{
+ pdfauthor={Sergio-Feliciano Mendoza-Barrera},
+ pdftitle={100 days of code. Day 1 with Julia},
+ pdfkeywords={R, data science, research, methodology, julia},
+ pdfsubject={Julia 100 days training},
+ pdfcreator={Emacs 27.1 (Org mode 9.4)},
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\begin{abstract}
+The today's topic is metaprogramming basics.
+\end{abstract}
+
+\section{Metaprogramming in Julia}
+\label{sec:org9c1a024}
+
+Julia code can be represented as a data structure of the language
+itself. This allows a program to transform and generate its own code
+\citep[p. 204]{lauwens2020}.
+
+\subsection{Expressions}
+\label{sec:orgd7b09f2}
+
+Every Julia program starts as a string
+
+\begin{minted}[,framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode]{julia}
+prog = "1 + 2"
+ex = Meta.parse(prog)
+\end{minted}
+
+we can get the type of the variable with \texttt{typeof} as usual and \texttt{dump}
+the tree structure\footnote{The \texttt{dump} function displays \texttt{expr} objects
+with annotations.}.
+
+\begin{minted}[,framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode]{julia}
+typeof(ex)
+dump(ex)
+\end{minted}
+
+\begin{verbatim}
+Expr
+Expr
+  head: Symbol call
+  args: Array{Any}((3,))
+    1: Symbol +
+    2: Int64 1
+    3: Int64 2
+\end{verbatim}
+
+
+\noindent Expressions can be constructed directly by prefixing with \texttt{:}
+inside parentheses or using a \texttt{quote} block
+
+\begin{minted}[,framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode]{julia}
+ex = quote
+    1+2
+end
+\end{minted}
+
+Now, \emph{Julia can evaluate an expression object} using \texttt{eval}
+
+\begin{minted}[,framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode]{julia}
+eval(ex)
+\end{minted}
+
+\begin{verbatim}
+3
+\end{verbatim}
+
+
+Every module has its own \texttt{eval} function that evaluates expressions in
+its scope\footnote{\emph{WARNING}: When you are using a lot of calls to the
+function \texttt{eval}, often this means that something is wrong. \texttt{eval} is
+considered \emph{evil}.}.
+
+\bibliographystyle{newapa}
+\bibliography{code}
+\end{document}

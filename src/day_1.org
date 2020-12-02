@@ -253,7 +253,5 @@ https://repl.it/@appbrewery/day-1-2-solution
 : e.g. print("Hello " + "world")
 : New lines can be created with a backslash and n.
 
-
-
 bibliographystyle:newapa
 bibliography:code.bib

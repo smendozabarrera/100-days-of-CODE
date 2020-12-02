@@ -118,4 +118,10 @@ local/media
 # Backup files
 *~
 
+# Export
+_minted*/
+_minted*/*
+auto/
+auto/*
+
 # EOF
