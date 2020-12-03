@@ -2,7 +2,7 @@
 # org-ref-default-bibliography: code.bib
 # End:
 
-#+TITLE:         100 days of code. Day 1 with Julia
+#+TITLE:         100 days of code with Julia
 #+AUTHOR:        Sergio-Feliciano Mendoza-Barrera
 #+DRAWERS:       sfmb
 #+EMAIL:         s.f.m@ieee.org
@@ -107,7 +107,7 @@
 The today's topic is metaprogramming basics.
 #+end_abstract
 
-* Metaprogramming in Julia
+* Metaprogramming in Julia. Day 1
 
 Julia code can be represented as a data structure of the language
 itself. This allows a program to transform and generate its own code
@@ -118,14 +118,10 @@ itself. This allows a program to transform and generate its own code
 Every Julia program starts as a string
 
 #+attr_latex: :options framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode
-#+begin_src julia :session :results output :exports code
-  prog = "1 + 2"
-  ex = Meta.parse(prog)
-#+end_src
-
-#+RESULTS:
-: "1 + 2"
-: :(1 + 2)
+#+BEGIN_SRC julia
+prog = "1 + 2"
+ex = Meta.parse(prog)
+#+END_SRC
 
 we can get the type of the variable with ~typeof~ as usual and ~dump~
 the tree structure[fn::The ~dump~ function displays ~expr~ objects
@@ -150,17 +146,11 @@ with annotations.].
 inside parentheses or using a ~quote~ block
 
 #+attr_latex: :options framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode
-#+begin_src julia :session :results output :exports code
-  ex = quote
-      1+2
-  end
-#+end_src
-
-#+RESULTS:
-: quote
-:     #= none:2 =#
-:     1 + 2
-: end
+#+BEGIN_SRC julia
+ex = quote
+    1+2
+end
+#+END_SRC
 
 Now, /Julia can evaluate an expression object/ using ~eval~
 
@@ -176,6 +166,108 @@ Every module has its own ~eval~ function that evaluates expressions in
 its scope[fn::/WARNING/: When you are using a lot of calls to the
 function ~eval~, often this means that something is wrong. ~eval~ is
 considered /evil/.].
+
+* Macros. Day 2
+
+\newthought{Macros can include generated code in a program}. A macro
+maps a tuple of ~Expr~ objects directly to a compiled expression:
+
+Here is a simple macro
+
+#+attr_latex: :options framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode
+#+begin_src julia :results none :exports code
+  macro containervariable(container, element)
+      return esc(:($(Symbol(container,element)) = $container[$element]))
+  end
+#+end_src
+
+Macros are called by prefixing their name with the ~@~ (at-sign). The
+macro call ~@containervariable letters 1~ is replaced by:
+
+#+attr_latex: :options framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode
+#+begin_example
+:(letters1 = letters[1])
+#+end_example
+
+~@macroexpand @containervariable letters 1~ returns this expression
+which is extremely useful for debugging.
+
+#+attr_latex: :options framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode
+#+begin_src julia :results none :exports code
+  @macroexpand @containervariable letters 1
+#+end_src
+
+This example illustrates how a macro can access the name of its
+arguments, something a function can’t do. The return expression needs
+to be /escaped/ with ~esc~ because it has to be resolved in the macro
+call environment[fn::/Note:/ Why macros? Macros generate and include
+fragments of customized code during parse time, thus before the full
+program is run.].
+
+** A concrete example
+
+\newthought{A concrete example of the macro usage} is show here
+cite:MIT18S191, in this case we are going to use the ~@elapsed~ macro
+over the ~peakflops~ function
+
+#+attr_latex: :options framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode
+#+begin_src julia :session :results output :exports all
+  peakflops()
+#+end_src
+
+#+RESULTS:
+: 5.892558158665142e10
+
+now we can see how long the operation took
+
+#+attr_latex: :options framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode
+#+begin_src julia :session :results output :exports all
+  @elapsed peakflops()
+#+end_src
+
+#+RESULTS:
+: 0.346514384
+
+Internally, Julia take this piece of code and transform in another
+piece of code
+
+#+attr_latex: :options framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode
+#+begin_src julia :session :results output :exports all
+  @macroexpand @elapsed peakflops()
+#+end_src
+
+#+RESULTS:
+#+begin_example
+quote
+    #= timing.jl:231 =#
+    while false
+        #= timing.jl:231 =#
+    end
+    #= timing.jl:232 =#
+    local var"#5#t0" = Base.time_ns()
+    #= timing.jl:233 =#
+    peakflops()
+    #= timing.jl:234 =#
+    (Base.time_ns() - var"#5#t0") / 1.0e9
+end
+#+end_example
+
+the comments indicate the place where Julia inserts extra code for
+this specific macro
+
+#+attr_latex: :options framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode
+#+begin_src julia :session :results output :exports all
+  Base.remove_linenums!(@macroexpand @elapsed peakflops())
+#+end_src
+
+#+RESULTS:
+: quote
+:     while false
+:     end
+:     local var"#7#t0" = Base.time_ns()
+:     peakflops()
+:     (Base.time_ns() - var"#7#t0") / 1.0e9
+: end
 
 bibliographystyle:newapa
 bibliography:code.bib

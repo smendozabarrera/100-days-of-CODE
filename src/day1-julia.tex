@@ -1,4 +1,4 @@
-% Created 2020-12-02 Wed 07:26
+% Created 2020-12-03 Thu 09:05
 % Intended LaTeX compiler: pdflatex
 \documentclass[letterpaper]{tufte-handout}
 \usepackage{graphicx}
@@ -69,10 +69,10 @@ urlcolor = citeColor,
 \definecolor{bg}{rgb}{0.973, 0.973, 0.973}
 \author{Sergio-Feliciano Mendoza-Barrera}
 \date{\today}
-\title{100 days of code. Day 1 with Julia}
+\title{100 days of code with Julia}
 \hypersetup{
  pdfauthor={Sergio-Feliciano Mendoza-Barrera},
- pdftitle={100 days of code. Day 1 with Julia},
+ pdftitle={100 days of code with Julia},
  pdfkeywords={R, data science, research, methodology, julia},
  pdfsubject={Julia 100 days training},
  pdfcreator={Emacs 27.1 (Org mode 9.4)},
@@ -84,15 +84,15 @@ urlcolor = citeColor,
 The today's topic is metaprogramming basics.
 \end{abstract}
 
-\section{Metaprogramming in Julia}
-\label{sec:org9c1a024}
+\section{Metaprogramming in Julia. Day 1}
+\label{sec:org05ee56a}
 
 Julia code can be represented as a data structure of the language
 itself. This allows a program to transform and generate its own code
 \citep[p. 204]{lauwens2020}.
 
 \subsection{Expressions}
-\label{sec:orgd7b09f2}
+\label{sec:orgf3273b3}
 
 Every Julia program starts as a string
 
@@ -145,6 +145,108 @@ Every module has its own \texttt{eval} function that evaluates expressions in
 its scope\footnote{\emph{WARNING}: When you are using a lot of calls to the
 function \texttt{eval}, often this means that something is wrong. \texttt{eval} is
 considered \emph{evil}.}.
+
+\section{Macros. Day 2}
+\label{sec:org67109ea}
+
+\newthought{Macros can include generated code in a program}. A macro
+maps a tuple of \texttt{Expr} objects directly to a compiled expression:
+
+Here is a simple macro
+
+\begin{minted}[,framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode]{julia}
+macro containervariable(container, element)
+    return esc(:($(Symbol(container,element)) = $container[$element]))
+end
+\end{minted}
+
+Macros are called by prefixing their name with the \texttt{@} (at-sign). The
+macro call \texttt{@containervariable letters 1} is replaced by:
+
+\begin{verbatim}
+:(letters1 = letters[1])
+\end{verbatim}
+
+\texttt{@macroexpand @containervariable letters 1} returns this expression
+which is extremely useful for debugging.
+
+\begin{minted}[,framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode]{julia}
+@macroexpand @containervariable letters 1
+\end{minted}
+
+This example illustrates how a macro can access the name of its
+arguments, something a function can’t do. The return expression needs
+to be \emph{escaped} with \texttt{esc} because it has to be resolved in the macro
+call environment\footnote{\emph{Note:} Why macros? Macros generate and include
+fragments of customized code during parse time, thus before the full
+program is run.}.
+
+\subsection{A concrete example}
+\label{sec:org63b5ab7}
+
+\newthought{A concrete example of the macro usage} is show here
+\cite{MIT18S191}, in this case we are going to use the \texttt{@elapsed} macro
+over the \texttt{peakflops} function
+
+\begin{minted}[,framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode]{julia}
+peakflops()
+\end{minted}
+
+\begin{verbatim}
+5.892558158665142e10
+\end{verbatim}
+
+
+now we can see how long the operation took
+
+\begin{minted}[,framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode]{julia}
+@elapsed peakflops()
+\end{minted}
+
+\begin{verbatim}
+0.346514384
+\end{verbatim}
+
+
+Internally, Julia take this piece of code and transform in another
+piece of code
+
+\begin{minted}[,framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode]{julia}
+@macroexpand @elapsed peakflops()
+\end{minted}
+
+\begin{verbatim}
+quote
+    #= timing.jl:231 =#
+    while false
+        #= timing.jl:231 =#
+    end
+    #= timing.jl:232 =#
+    local var"#5#t0" = Base.time_ns()
+    #= timing.jl:233 =#
+    peakflops()
+    #= timing.jl:234 =#
+    (Base.time_ns() - var"#5#t0") / 1.0e9
+end
+\end{verbatim}
+
+the comments indicate the place where Julia inserts extra code for
+this specific macro
+
+\begin{minted}[,framesep=2mm, baselinestretch=1.2, linenos, fontsize=\footnotesize, breaklines=true, bgcolor=bg, style=xcode]{julia}
+Base.remove_linenums!(@macroexpand @elapsed peakflops())
+\end{minted}
+
+\begin{verbatim}
+quote
+    while false
+    end
+    local var"#7#t0" = Base.time_ns()
+    peakflops()
+    (Base.time_ns() - var"#7#t0") / 1.0e9
+end
+\end{verbatim}
+
 
 \bibliographystyle{newapa}
 \bibliography{code}
